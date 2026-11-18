@@ -1,0 +1,12 @@
+__pycache__/
+*.pyc
+.venv/
+venv/
+.env
+backend/chroma_db/
+backend/registry.json
+backend/__pycache__/
+node_modules/
+.next/
+out/
+.streamlit/
