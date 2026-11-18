@@ -226,11 +226,14 @@ def ask_rag(question: str):
 
 
 # ---------- startup: seed the index from repo/data/*.pdf if empty ----------
-@app.on_event("startup")
-def startup():
+from contextlib import asynccontextmanager
+
+
+@asynccontextmanager
+async def lifespan(_app):
     UPLOAD_DIR.mkdir(parents=True, exist_ok=True)
     if not load_registry()["files"]:
-        reg = refresh_registry(all_pdf_paths())
+        refresh_registry(all_pdf_paths())
         if get_api_key():
             try:
                 build_vector_store()
@@ -238,6 +241,10 @@ def startup():
                 print("Startup embedding failed (key may be invalid):", e)
         else:
             print("No GEMINI_API_KEY — registry seeded, vector store not embedded yet.")
+    yield
+
+
+app.router.lifespan_context = lifespan
 
 
 # ---------- endpoints ----------
@@ -248,9 +255,18 @@ def root():
             "endpoints": ["/health", "/patients", "/upload", "/ask"]}
 
 
+def registry_or_seed():
+    """Registry, seeding it from data/*.pdf on first use (startup events
+    don't always fire under TestClient, so don't rely on them alone)."""
+    reg = load_registry()
+    if not reg.get("files"):
+        reg = refresh_registry(all_pdf_paths())
+    return reg
+
+
 @app.get("/health")
 def health():
-    reg = load_registry()
+    reg = registry_or_seed()
     return {"status": "ok", "api_key_set": bool(get_api_key()),
             "index_exists": index_is_embedded(),
             "embedded": reg.get("embedded", False),
@@ -262,7 +278,7 @@ def health():
 
 @app.get("/patients")
 def patients():
-    return {"patients": load_registry().get("patients", [])}
+    return {"patients": registry_or_seed().get("patients", [])}
 
 
 @app.post("/upload")
@@ -307,7 +323,7 @@ def ask(body: dict):
     # Fix (a): patient-list questions answered from the registry (also covered
     # by the Patient Directory document in the vector store for the LLM path).
     if PATIENT_LIST_Q.search(question):
-        pats = load_registry().get("patients", [])
+        pats = registry_or_seed().get("patients", [])
         if not pats:
             return {"answer": FALLBACK, "sources": []}
         lines = ["Our patients in the clinic records are:"] + \
