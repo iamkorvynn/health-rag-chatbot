@@ -7,8 +7,9 @@ import '../theme.dart';
 /// Login screen. JWT auth against POST /auth/login.
 /// Demo accounts are the project's documented seed accounts
 /// (admin / doctor / staff) — tap a chip to fill them in.
-/// The server address is editable here because the free tunnel URL rotates:
-/// without it, a stale default would lock the user out of Settings.
+/// The server address is found automatically on startup (see
+/// url_resolver.dart) and shown here; it stays editable as a fallback,
+/// but the user should never need to change it.
 class LoginScreen extends StatefulWidget {
   final ApiClient client;
   final VoidCallback onLoggedIn;
@@ -236,7 +237,7 @@ class _LoginScreenState extends State<LoginScreen> {
                           labelText: 'Server address',
                           prefixIcon: Icon(Icons.link),
                           helperText:
-                              'The tunnel address changes when it reconnects — paste the new one here if sign-in fails.',
+                              'Found automatically — you don’t need to change this.',
                         ),
                         keyboardType: TextInputType.url,
                         autocorrect: false,

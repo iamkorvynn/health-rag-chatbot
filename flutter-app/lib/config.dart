@@ -12,7 +12,7 @@ class AppConfig {
   /// Default API base URL (current public tunnel, 2026-11-18).
   /// Changeable in Settings -> API base URL; persisted on device.
   static const String defaultBaseUrl =
-      'https://b38a2190b5fa68.app.lhr.life';
+      'https://5ef9d065b1739a.app.lhr.life';
 
   static const String disclaimer =
       'Decision-support only, not a replacement for a doctor. '

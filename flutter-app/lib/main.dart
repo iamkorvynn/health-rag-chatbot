@@ -9,6 +9,7 @@ import 'screens/more_screen.dart';
 import 'screens/patients_screen.dart';
 import 'screens/visit_screen.dart';
 import 'theme.dart';
+import 'url_resolver.dart';
 
 /// Health RAG Chatbot — Sunrise Family Clinic (native Android app).
 ///
@@ -38,7 +39,13 @@ class _HealthRagAppState extends State<HealthRagApp> {
 
   Future<void> _restoreSession() async {
     final prefs = await SharedPreferences.getInstance();
-    final baseUrl = prefs.getString('base_url') ?? AppConfig.defaultBaseUrl;
+    final savedUrl = prefs.getString('base_url');
+    // The tunnel URL rotates — resolve the live address first so the app
+    // finds the server itself. A saved/manual URL is only the fallback.
+    final baseUrl = await BackendUrlResolver.resolve(
+      fallback: savedUrl ?? AppConfig.defaultBaseUrl,
+    );
+    await prefs.setString('base_url', baseUrl);
     final language = prefs.getString('language') ?? 'en';
     final client = ApiClient(baseUrl: baseUrl)
       ..token = prefs.getString('jwt_token');
@@ -100,7 +107,16 @@ class _HealthRagAppState extends State<HealthRagApp> {
       debugShowCheckedModeBanner: false,
       home: _loading || _client == null
           ? const Scaffold(
-              body: Center(child: CircularProgressIndicator()),
+              body: Center(
+                child: Column(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    CircularProgressIndicator(),
+                    SizedBox(height: 16),
+                    Text('Connecting to the clinic server…'),
+                  ],
+                ),
+              ),
             )
           : _client!.token == null
               ? LoginScreen(
