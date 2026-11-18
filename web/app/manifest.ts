@@ -12,8 +12,8 @@ export default function manifest(): MetadataRoute.Manifest {
       "Decision-support chatbot for doctors at Sunrise Family Clinic. Synthetic demo data.",
     start_url: "/",
     display: "standalone",
-    background_color: "#ffffff",
-    theme_color: "#0e7490",
+    background_color: "#f5f3ff",
+    theme_color: "#4caf4f",
     icons: [
       { src: "/icons/icon-192.png", sizes: "192x192", type: "image/png" },
       { src: "/icons/icon-512.png", sizes: "512x512", type: "image/png" },

@@ -1,8 +1,15 @@
 @import "tailwindcss";
 
+/*
+ * Health RAG — one product, two surfaces.
+ * Web landing: Nexcent style — white, green accent #4CAF4F, clean type.
+ * App screens (chat / patients / upload): soft purple/lavender gradients,
+ * big rounded white cards, soft shadows — same radius + shadow language.
+ * Light-only design (the references are light); no dark-mode inversion.
+ */
 :root {
   --background: #ffffff;
-  --foreground: #171717;
+  --foreground: #23203a;
 }
 
 @theme inline {
@@ -10,17 +17,37 @@
   --color-foreground: var(--foreground);
   --font-sans: var(--font-geist-sans);
   --font-mono: var(--font-geist-mono);
+
+  /* Nexcent green */
+  --color-brand: #4caf4f;
+  --color-brand-dark: #388e3b;
+  --color-brand-deep: #2e7d32;
+  --color-brand-soft: #e8f5e9;
+  --color-brand-pale: #f1f8e9;
+
+  /* Soft purple app palette (mobile reference) */
+  --color-grape: #6e5aa8;
+  --color-grape-dark: #57478c;
+  --color-grape-soft: #ede9fe;
+  --color-lavender: #f5f3ff;
+  --color-lavender-deep: #e9e4f8;
+  --color-lilac: #b7a8e8;
+
+  --color-ink: #23203a;
+  --color-muted: #6b6780;
+  --color-line: #e7e4f2;
+
+  --shadow-card: 0 10px 30px rgba(90, 70, 160, 0.12);
+  --shadow-card-lg: 0 18px 45px rgba(90, 70, 160, 0.18);
+  --shadow-soft: 0 4px 14px rgba(35, 32, 58, 0.08);
 }
 
-@media (prefers-color-scheme: dark) {
-  :root {
-    --background: #0a0a0a;
-    --foreground: #ededed;
-  }
+html {
+  scroll-behavior: smooth;
 }
 
 body {
   background: var(--background);
   color: var(--foreground);
-  font-family: Arial, Helvetica, sans-serif;
+  font-family: var(--font-geist-sans), Arial, Helvetica, sans-serif;
 }

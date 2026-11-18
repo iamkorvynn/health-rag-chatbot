@@ -5,6 +5,7 @@ venv/
 .env
 backend/chroma_db/
 backend/registry.json
+backend/*.db
 backend/__pycache__/
 node_modules/
 .next/

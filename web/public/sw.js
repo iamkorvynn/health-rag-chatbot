@@ -1,7 +1,7 @@
 // Minimal service worker: offline shell for the Health RAG Chatbot PWA.
 // Caches the home page + manifest so the app shell opens offline;
 // API calls (chat/upload) are network-only and fail gracefully when offline.
-const CACHE = "health-rag-v1";
+const CACHE = "health-rag-v2";
 const SHELL = ["/", "/manifest.webmanifest", "/icons/icon-192.png"];
 
 self.addEventListener("install", (e) => {
