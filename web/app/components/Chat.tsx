@@ -7,9 +7,9 @@
 import { useEffect, useRef, useState } from "react";
 import { jsPDF } from "jspdf";
 import {
-  API_URL,
   LANGUAGES,
   apiPost,
+  getResolvedApiUrl,
   loadChatHistory,
   questionKeywords,
   saveChatHistory,
@@ -169,7 +169,7 @@ export default function Chat({ externalQuestion }: { externalQuestion?: { q: str
     } catch {
       setHistory((h) => [
         ...h,
-        { q: query, a: `Could not reach the backend at ${API_URL}. Is it running?`, sources: [], language, ts: Date.now() },
+        { q: query, a: `Could not reach the backend at ${getResolvedApiUrl()}. Is it running?`, sources: [], language, ts: Date.now() },
       ]);
     }
     setLoading(false);

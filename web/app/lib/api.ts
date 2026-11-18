@@ -5,7 +5,101 @@
 // tokens, test-questions. Nothing is faked: every number/list/answer comes
 // from a live backend response or from real client-side computation.
 
-export const API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
+// Runtime backend URL resolution — the localhost.run tunnel URL rotates on
+// reconnect, so the baked NEXT_PUBLIC_API_URL goes stale until the next
+// redeploy. Resolve at runtime instead, in this order:
+//   (a) public gist (published ~2s after a tunnel rotation),
+//   (b) same-origin /api-url.json (always matches the deployed site),
+//   (c) value cached from a previous session,
+//   (d) the baked build-time URL (last resort).
+// A failed fetch never surfaces an error here — resolution just moves to
+// the next source. Every API call awaits getApiUrl() first, so resolution
+// always happens before the first API call.
+const GIST_URL =
+  "https://gist.githubusercontent.com/iamkorvynn/2c01b4fcaa4f8649a477d9c46f483560/raw/health-rag-backend-url.json";
+const API_URL_CACHE_KEY = "health-rag-api-url";
+const RESOLVE_TIMEOUT_MS = 8000;
+
+export const BAKED_API_URL = (process.env.NEXT_PUBLIC_API_URL || "http://localhost:8000").replace(/\/$/, "");
+/** Baked build-time backend URL (last-resort fallback). Prefer getApiUrl(). */
+export const API_URL = BAKED_API_URL;
+
+let resolvedApiUrl: string | null = null;
+let resolvingApiUrl: Promise<string> | null = null;
+
+async function fetchJsonWithTimeout(url: string, ms: number): Promise<unknown> {
+  const ctrl = new AbortController();
+  const t = setTimeout(() => ctrl.abort(), ms);
+  try {
+    const r = await fetch(url, { signal: ctrl.signal });
+    if (!r.ok) throw new Error(`HTTP ${r.status}`);
+    return (await r.json()) as unknown;
+  } finally {
+    clearTimeout(t);
+  }
+}
+
+function pickUrl(data: unknown): string | null {
+  if (data && typeof data === "object" && typeof (data as { url?: unknown }).url === "string") {
+    const u = ((data as { url: string }).url || "").trim().replace(/\/$/, "");
+    return /^https?:\/\//.test(u) ? u : null;
+  }
+  return null;
+}
+
+function readCachedApiUrl(): string | null {
+  if (typeof window === "undefined") return null;
+  try {
+    const u = (localStorage.getItem(API_URL_CACHE_KEY) || "").trim().replace(/\/$/, "");
+    return /^https?:\/\//.test(u) ? u : null;
+  } catch {
+    return null;
+  }
+}
+
+async function resolveApiUrl(): Promise<string> {
+  // (a) gist — updated seconds after a tunnel rotation. One retry.
+  for (let attempt = 0; attempt < 2; attempt++) {
+    try {
+      const u = pickUrl(await fetchJsonWithTimeout(`${GIST_URL}?t=${Date.now()}`, RESOLVE_TIMEOUT_MS));
+      if (u) return u;
+    } catch {
+      /* fall through to the next source */
+    }
+  }
+  // (b) same-origin /api-url.json — always matches the deployed site.
+  try {
+    const u = pickUrl(await fetchJsonWithTimeout("/api-url.json", RESOLVE_TIMEOUT_MS));
+    if (u) return u;
+  } catch {
+    /* fall through */
+  }
+  // (c) value cached from a previous session, then (d) the baked URL.
+  return readCachedApiUrl() ?? BAKED_API_URL;
+}
+
+/** Resolve (once per page load) and cache the live backend URL. */
+export function getApiUrl(): Promise<string> {
+  if (resolvedApiUrl) return Promise.resolve(resolvedApiUrl);
+  if (typeof window === "undefined") return Promise.resolve(BAKED_API_URL);
+  if (!resolvingApiUrl) {
+    resolvingApiUrl = resolveApiUrl().then((u) => {
+      resolvedApiUrl = u;
+      try {
+        localStorage.setItem(API_URL_CACHE_KEY, u);
+      } catch {
+        /* storage unavailable — memory cache still applies */
+      }
+      return u;
+    });
+  }
+  return resolvingApiUrl;
+}
+
+/** Sync best-known backend URL (for error messages). Never triggers a fetch. */
+export function getResolvedApiUrl(): string {
+  return resolvedApiUrl ?? readCachedApiUrl() ?? BAKED_API_URL;
+}
 
 // Real pipeline config, as implemented in the backend (see backend/main.py
 // and the API contract). Shown on /how — these are config values, not live
@@ -139,12 +233,13 @@ export function authHeaders(token?: string | null): Record<string, string> {
 }
 
 export async function apiGet<T>(path: string, token?: string | null): Promise<{ ok: boolean; status: number; data: T | null; detail?: string }> {
+  const base = await getApiUrl();
   try {
-    const r = await fetch(`${API_URL}${path}`, { headers: authHeaders(token) });
+    const r = await fetch(`${base}${path}`, { headers: authHeaders(token) });
     const data = (await r.json().catch(() => null)) as T | null;
     return { ok: r.ok, status: r.status, data, detail: (data as { detail?: string } | null)?.detail };
   } catch {
-    return { ok: false, status: 0, data: null, detail: `Could not reach the backend at ${API_URL}.` };
+    return { ok: false, status: 0, data: null, detail: `Could not reach the backend at ${base}.` };
   }
 }
 
@@ -153,8 +248,9 @@ export async function apiPost<T>(
   body: unknown,
   token?: string | null,
 ): Promise<{ ok: boolean; status: number; data: T | null; detail?: string }> {
+  const base = await getApiUrl();
   try {
-    const r = await fetch(`${API_URL}${path}`, {
+    const r = await fetch(`${base}${path}`, {
       method: "POST",
       headers: { "Content-Type": "application/json", ...authHeaders(token) },
       body: JSON.stringify(body),
@@ -162,7 +258,7 @@ export async function apiPost<T>(
     const data = (await r.json().catch(() => null)) as T | null;
     return { ok: r.ok, status: r.status, data, detail: (data as { detail?: string } | null)?.detail };
   } catch {
-    return { ok: false, status: 0, data: null, detail: `Could not reach the backend at ${API_URL}.` };
+    return { ok: false, status: 0, data: null, detail: `Could not reach the backend at ${base}.` };
   }
 }
 
@@ -170,12 +266,32 @@ export async function apiDelete<T>(
   path: string,
   token?: string | null,
 ): Promise<{ ok: boolean; status: number; data: T | null; detail?: string }> {
+  const base = await getApiUrl();
   try {
-    const r = await fetch(`${API_URL}${path}`, { method: "DELETE", headers: authHeaders(token) });
+    const r = await fetch(`${base}${path}`, { method: "DELETE", headers: authHeaders(token) });
     const data = (await r.json().catch(() => null)) as T | null;
     return { ok: r.ok, status: r.status, data, detail: (data as { detail?: string } | null)?.detail };
   } catch {
-    return { ok: false, status: 0, data: null, detail: `Could not reach the backend at ${API_URL}.` };
+    return { ok: false, status: 0, data: null, detail: `Could not reach the backend at ${base}.` };
+  }
+}
+
+/** Multipart upload (clinic PDFs) against the resolved backend URL. */
+export async function apiUpload<T>(
+  form: FormData,
+  token?: string | null,
+): Promise<{ ok: boolean; status: number; data: T | null; detail?: string }> {
+  const base = await getApiUrl();
+  try {
+    const r = await fetch(`${base}/upload`, {
+      method: "POST",
+      headers: authHeaders(token),
+      body: form,
+    });
+    const data = (await r.json().catch(() => null)) as T | null;
+    return { ok: r.ok, status: r.status, data, detail: (data as { detail?: string } | null)?.detail };
+  } catch {
+    return { ok: false, status: 0, data: null, detail: `Could not reach the backend at ${base}.` };
   }
 }
 

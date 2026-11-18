@@ -3,7 +3,7 @@
 // into the clinic records; scanned ones are OCR'd by the backend.
 import { useState } from "react";
 import LoginForm from "../components/LoginForm";
-import { API_URL, apiGet, type Stats } from "../lib/api";
+import { apiGet, apiUpload, type Stats } from "../lib/api";
 import { useAuth } from "../lib/auth";
 
 export default function UploadPage() {
@@ -17,16 +17,12 @@ export default function UploadPage() {
     for (const f of files) form.append("files", f);
     setUploadMsg("Uploading…");
     try {
-      const r = await fetch(`${API_URL}/upload`, {
-        method: "POST",
-        headers: { Authorization: `Bearer ${token}` },
-        body: form,
-      });
-      const d = await r.json();
+      const r = await apiUpload<{ uploaded: string[]; embedded: boolean }>(form, token);
+      const d = r.data;
       setUploadMsg(
-        r.ok
+        r.ok && d
           ? `Uploaded: ${d.uploaded.join(", ")}${d.embedded ? "" : " — registered, not embedded yet (no API key on backend)."}`
-          : `Upload failed: ${d.detail || r.status}`,
+          : `Upload failed: ${r.detail || r.status}`,
       );
       if (r.ok) {
         apiGet<Stats>("/stats").then(() => {
