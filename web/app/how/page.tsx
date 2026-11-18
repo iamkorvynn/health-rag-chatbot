@@ -51,7 +51,7 @@ const STAGES = [
 export default function HowPage() {
   return (
     <div className="pb-20 md:pb-0">
-      <section className="bg-white">
+      <section>
         <div className="max-w-6xl mx-auto px-4 py-12 md:py-16">
           <p className="text-xs font-bold tracking-[0.18em] text-brand-deep uppercase">Sunrise Family Clinic • How it works</p>
           <h1 className="mt-4 text-3xl md:text-4xl font-bold text-ink">
@@ -66,9 +66,9 @@ export default function HowPage() {
           {/* Pipeline diagram */}
           <div className="mt-12 grid md:grid-cols-3 gap-6">
             {STAGES.map((s, i) => (
-              <article key={s.step} className="relative rounded-[24px] overflow-hidden border border-line shadow-card bg-white">
-                <div className="h-24 bg-gradient-to-br from-lavender via-lavender-deep to-[#d5cbf3] flex items-center justify-between px-5">
-                  <span className="w-12 h-12 rounded-full bg-white shadow-card flex items-center justify-center text-xl font-bold text-grape">{s.step}</span>
+              <article key={s.step} className="relative rounded-[24px] overflow-hidden border border-line shadow-card bg-card">
+                <div className="h-24 bg-gradient-to-br from-lavender via-lavender-deep to-[#0d1f14] flex items-center justify-between px-5">
+                  <span className="w-12 h-12 rounded-full bg-card shadow-card flex items-center justify-center text-xl font-bold text-grape">{s.step}</span>
                   {i < STAGES.length - 1 && (
                     <span className="hidden md:block text-grape text-2xl font-bold" aria-hidden>→</span>
                   )}
@@ -97,8 +97,8 @@ export default function HowPage() {
           </div>
 
           <p className="mt-8 text-center">
-            <Link href="/#chat" className="bg-brand hover:bg-brand-dark text-white font-semibold rounded-lg px-6 py-3 shadow-soft inline-block">Try it — ask the assistant →</Link>
-            <Link href="/tests" className="ml-3 border border-line hover:border-brand text-ink font-semibold rounded-lg px-6 py-3 bg-white inline-block">See the live test questions</Link>
+            <Link href="/chat" className="bg-brand hover:bg-brand-dark text-onlime font-semibold rounded-lg px-6 py-3 shadow-soft inline-block">Try it — ask the assistant →</Link>
+            <Link href="/tests" className="ml-3 border border-line hover:border-brand text-ink font-semibold rounded-lg px-6 py-3 bg-card inline-block">See the live test questions</Link>
           </p>
         </div>
       </section>

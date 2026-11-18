@@ -55,7 +55,7 @@ function HighlightedText({ text, keywords }: { text: string; keywords: string[] 
     <>
       {parts.map((part, i) =>
         keywords.some((k) => k.toLowerCase() === part.toLowerCase()) ? (
-          <mark key={i} className="bg-yellow-200 text-ink rounded px-0.5">{part}</mark>
+          <mark key={i} className="bg-lime-300/25 text-lime-100 rounded px-0.5">{part}</mark>
         ) : (
           <span key={i}>{part}</span>
         ),
@@ -221,7 +221,7 @@ export default function Chat({ externalQuestion }: { externalQuestion?: { q: str
   }
 
   return (
-    <div className="bg-white/70 rounded-[28px] shadow-card p-4 md:p-5">
+    <div className="bg-card/70 rounded-[28px] shadow-card p-4 md:p-5">
       <div className="flex flex-wrap items-center gap-2 mb-4">
         <span className="text-sm text-muted">
           Signed in as <strong className="text-ink">{user?.username}</strong> ({user?.role})
@@ -232,7 +232,7 @@ export default function Chat({ externalQuestion }: { externalQuestion?: { q: str
             id="chat-lang"
             value={language}
             onChange={(e) => setLanguage(e.target.value as Language)}
-            className="bg-white border border-line rounded-full px-3 py-1.5 text-sm shadow-soft outline-none focus:border-brand"
+            className="bg-card border border-line rounded-full px-3 py-1.5 text-sm shadow-soft outline-none focus:border-brand"
           >
             {LANGUAGES.map((l) => (
               <option key={l.code} value={l.code}>{l.label}</option>
@@ -243,14 +243,14 @@ export default function Chat({ externalQuestion }: { externalQuestion?: { q: str
               <button
                 type="button"
                 onClick={() => exportChatPdf(history)}
-                className="bg-white border border-line hover:border-grape text-xs font-semibold text-ink rounded-full px-3 py-1.5 shadow-soft"
+                className="bg-card border border-line hover:border-grape text-xs font-semibold text-ink rounded-full px-3 py-1.5 shadow-soft"
               >
                 Export PDF
               </button>
               <button
                 type="button"
                 onClick={clearHistory}
-                className="bg-white border border-line hover:border-red-400 text-xs font-semibold text-ink rounded-full px-3 py-1.5 shadow-soft"
+                className="bg-card border border-line hover:border-red-500 text-xs font-semibold text-ink rounded-full px-3 py-1.5 shadow-soft"
               >
                 Clear history
               </button>
@@ -261,7 +261,7 @@ export default function Chat({ externalQuestion }: { externalQuestion?: { q: str
 
       <div className="space-y-4 min-h-[120px]">
         {history.length === 0 && (
-          <p className="text-muted text-sm bg-white rounded-[20px] shadow-soft p-4">
+          <p className="text-muted text-sm bg-card rounded-[20px] shadow-soft p-4">
             Ask the assistant anything about the clinic records — for example, a patient&apos;s allergy or the Saturday timings.
             Your chat history is saved on this device.
           </p>
@@ -274,7 +274,7 @@ export default function Chat({ externalQuestion }: { externalQuestion?: { q: str
                 <p className="bg-brand-soft text-ink rounded-[20px] rounded-br-md px-4 py-2.5 text-sm max-w-[85%] shadow-soft">{m.q}</p>
               </div>
               <div className="flex justify-start">
-                <div className="bg-white rounded-[20px] rounded-bl-md px-4 py-3 text-sm max-w-[92%] shadow-card">
+                <div className="bg-card rounded-[20px] rounded-bl-md px-4 py-3 text-sm max-w-[92%] shadow-card">
                   <p className="whitespace-pre-line text-ink">{m.a}</p>
                   {m.sources.length > 0 && (
                     <div className="mt-3 space-y-2">
@@ -300,7 +300,7 @@ export default function Chat({ externalQuestion }: { externalQuestion?: { q: str
         })}
         {loading && (
           <div className="flex justify-start">
-            <p className="bg-white rounded-[20px] rounded-bl-md px-4 py-3 text-sm shadow-card text-muted">Thinking…</p>
+            <p className="bg-card rounded-[20px] rounded-bl-md px-4 py-3 text-sm shadow-card text-muted">Thinking…</p>
           </div>
         )}
       </div>
@@ -310,7 +310,7 @@ export default function Chat({ externalQuestion }: { externalQuestion?: { q: str
           value={question}
           onChange={(e) => setQuestion(e.target.value)}
           placeholder="Ask about a patient, medicine, or the clinic…"
-          className="flex-1 bg-white border border-line rounded-full px-4 py-3 text-sm shadow-soft outline-none focus:border-brand"
+          className="flex-1 bg-card border border-line rounded-full px-4 py-3 text-sm shadow-soft outline-none focus:border-brand"
         />
         {voiceSupported && (
           <button
@@ -318,20 +318,20 @@ export default function Chat({ externalQuestion }: { externalQuestion?: { q: str
             onClick={toggleVoice}
             title={listening ? "Stop listening" : "Speak your question"}
             className={`rounded-full px-4 py-3 text-sm shadow-soft shrink-0 font-semibold ${
-              listening ? "bg-red-500 text-white" : "bg-white border border-line hover:border-grape text-ink"
+              listening ? "bg-red-500 text-white" : "bg-card border border-line hover:border-grape text-ink"
             }`}
           >
             {listening ? "● Listening…" : "🎙 Mic"}
           </button>
         )}
-        <button disabled={loading} className="bg-grape hover:bg-grape-dark disabled:opacity-50 text-white font-semibold rounded-full px-5 py-3 text-sm shadow-soft shrink-0">
+        <button disabled={loading} className="bg-grape hover:bg-grape-dark disabled:opacity-50 text-onlime font-semibold rounded-full px-5 py-3 text-sm shadow-soft shrink-0">
           {loading ? "…" : "Ask"}
         </button>
       </form>
-      {voiceError && <p className="text-xs text-red-700 mt-2">{voiceError}</p>}
+      {voiceError && <p className="text-xs text-red-300 mt-2">{voiceError}</p>}
       <div className="mt-3 flex flex-wrap gap-2">
         {SUGGESTIONS.map((s) => (
-          <button key={s} type="button" onClick={() => askQuestion(s)} className="bg-white border border-line hover:border-grape text-xs text-ink rounded-full px-3 py-1.5 shadow-soft">
+          <button key={s} type="button" onClick={() => askQuestion(s)} className="bg-card border border-line hover:border-grape text-xs text-ink rounded-full px-3 py-1.5 shadow-soft">
             {s}
           </button>
         ))}

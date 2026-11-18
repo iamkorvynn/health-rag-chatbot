@@ -22,7 +22,7 @@ export default function LoginForm({ compact = false }: { compact?: boolean }) {
   }
 
   return (
-    <form onSubmit={submit} className="bg-white rounded-[24px] shadow-card p-5 space-y-3">
+    <form onSubmit={submit} className="bg-card rounded-[24px] shadow-card p-5 space-y-3">
       {!compact && (
         <p className="text-sm text-muted">
           Sign in to use the assistant. Staff accounts are provided by the clinic — try the demo
@@ -36,7 +36,7 @@ export default function LoginForm({ compact = false }: { compact?: boolean }) {
           onChange={(e) => setUsername(e.target.value)}
           placeholder="Username"
           autoComplete="username"
-          className="flex-1 bg-white border border-line rounded-full px-4 py-3 text-sm shadow-soft outline-none focus:border-brand"
+          className="flex-1 bg-card border border-line rounded-full px-4 py-3 text-sm shadow-soft outline-none focus:border-brand"
         />
         <input
           type="password"
@@ -44,16 +44,16 @@ export default function LoginForm({ compact = false }: { compact?: boolean }) {
           onChange={(e) => setPassword(e.target.value)}
           placeholder="Password"
           autoComplete="current-password"
-          className="flex-1 bg-white border border-line rounded-full px-4 py-3 text-sm shadow-soft outline-none focus:border-brand"
+          className="flex-1 bg-card border border-line rounded-full px-4 py-3 text-sm shadow-soft outline-none focus:border-brand"
         />
         <button
           disabled={busy}
-          className="bg-grape hover:bg-grape-dark disabled:opacity-50 text-white font-semibold rounded-full px-6 py-3 text-sm shadow-soft shrink-0"
+          className="bg-grape hover:bg-grape-dark disabled:opacity-50 text-onlime font-semibold rounded-full px-6 py-3 text-sm shadow-soft shrink-0"
         >
           {busy ? "Signing in…" : "Sign in"}
         </button>
       </div>
-      {error && <p className="text-sm text-red-700 bg-red-50 rounded-xl px-4 py-2">{error}</p>}
+      {error && <p className="text-sm text-red-300 bg-red-950/60 rounded-xl px-4 py-2">{error}</p>}
     </form>
   );
 }

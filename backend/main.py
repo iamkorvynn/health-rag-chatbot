@@ -9,11 +9,14 @@ Replicates the notebook pipeline (Health_RAG_Chatbot__1.ipynb) exactly:
 
 Synthetic demo data only. Decision-support for doctors, NOT a diagnosis tool.
 
-API key: ONLY from the environment (GEMINI_API_KEY, or GOOGLE_API_KEY as
-fallback, like the notebook). Never hardcode one, never commit one.
-Without a key the server still runs: /health, /patients and /upload work
-(the PDFs' text/metadata are registered), but embedding and /ask need the
-key, so /ask returns a clear 503 until a key is set.
+API key: resolved dynamically per request — a key entered by an admin on
+the website (POST /admin/api-key, stored in SQLite) takes precedence,
+GEMINI_API_KEY (or GOOGLE_API_KEY) from the environment is the fallback.
+Never hardcode one, never commit one, never return the full key from any
+endpoint, never log a key value. Without any key the server still runs:
+/health, /patients and /upload work (the PDFs' text/metadata are
+registered), but embedding and /ask need the key, so /ask returns a clear
+503 until a key is set.
 
 Auth: JWT Bearer (see /auth/login). Seeded demo accounts (bcrypt-hashed in
 SQLite backend/clinic.db): admin/admin123 (admin), doctor/doctor123
@@ -94,8 +97,56 @@ app.add_middleware(CORSMiddleware, allow_origins=["*"], allow_methods=["*"],
 
 
 def get_api_key():
-    """Key from env only — GEMINI_API_KEY first, GOOGLE_API_KEY as fallback."""
-    return os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    """Active Gemini key, resolved fresh on every call: a key entered by an
+    admin on the website (SQLite settings) first, GEMINI_API_KEY / GOOGLE_API_KEY
+    from the environment as fallback. No caching — a key change via
+    POST /admin/api-key takes effect without a restart."""
+    return get_manual_api_key() or os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+
+
+MANUAL_KEY_NAME = "gemini_api_key"
+
+
+def get_manual_api_key():
+    """Key entered by an admin via the website, or None. Never logged."""
+    try:
+        with db_conn() as conn:
+            row = conn.execute("SELECT value FROM settings WHERE key = ?",
+                               (MANUAL_KEY_NAME,)).fetchone()
+    except Exception:
+        return None
+    return row["value"] if row else None
+
+
+def set_manual_api_key(key: str, username: str):
+    with db_conn() as conn:
+        conn.execute(
+            "INSERT INTO settings (key, value, updated_by, updated_at) VALUES (?, ?, ?, ?)"
+            " ON CONFLICT(key) DO UPDATE SET value = excluded.value,"
+            " updated_by = excluded.updated_by, updated_at = excluded.updated_at",
+            (MANUAL_KEY_NAME, key, username, datetime.now(timezone.utc).isoformat()))
+        conn.execute("INSERT INTO settings_log (timestamp, username, action) VALUES (?, ?, ?)",
+                     (datetime.now(timezone.utc).isoformat(), username, "api_key_set"))
+        conn.commit()
+
+
+def clear_manual_api_key(username: str):
+    with db_conn() as conn:
+        conn.execute("DELETE FROM settings WHERE key = ?", (MANUAL_KEY_NAME,))
+        conn.execute("INSERT INTO settings_log (timestamp, username, action) VALUES (?, ?, ?)",
+                     (datetime.now(timezone.utc).isoformat(), username, "api_key_removed"))
+        conn.commit()
+
+
+def api_key_status():
+    """Masked status of the active key. The full key is NEVER returned."""
+    manual = get_manual_api_key()
+    env = os.environ.get("GEMINI_API_KEY") or os.environ.get("GOOGLE_API_KEY")
+    if manual:
+        return {"configured": True, "source": "manual", "masked": manual[-4:]}
+    if env:
+        return {"configured": True, "source": "env", "masked": env[-4:]}
+    return {"configured": False, "source": "none", "masked": None}
 
 
 # ---------- SQLite: users, query log, token queue ----------
@@ -125,6 +176,12 @@ def init_db():
             number INTEGER PRIMARY KEY, name TEXT NOT NULL,
             status TEXT NOT NULL DEFAULT 'waiting',
             created_at TEXT NOT NULL)""")
+        conn.execute("""CREATE TABLE IF NOT EXISTS settings (
+            key TEXT PRIMARY KEY, value TEXT NOT NULL,
+            updated_by TEXT NOT NULL, updated_at TEXT NOT NULL)""")
+        conn.execute("""CREATE TABLE IF NOT EXISTS settings_log (
+            id INTEGER PRIMARY KEY AUTOINCREMENT, timestamp TEXT NOT NULL,
+            username TEXT NOT NULL, action TEXT NOT NULL)""")
         for username, password, role in SEED_USERS:
             row = conn.execute("SELECT 1 FROM users WHERE username = ?",
                                (username,)).fetchone()
@@ -334,7 +391,6 @@ def build_vector_store():
     key = get_api_key()
     if not key:
         raise RuntimeError("GEMINI_API_KEY is not set — cannot embed documents.")
-    os.environ["GOOGLE_API_KEY"] = key
     from langchain_chroma import Chroma
     from langchain_google_genai import GoogleGenerativeAIEmbeddings
 
@@ -351,7 +407,7 @@ def build_vector_store():
         docs.append(patient_directory_doc(sorted(patients, key=lambda p: p["id"])))
     splitter = RecursiveCharacterTextSplitter(chunk_size=CHUNK_SIZE, chunk_overlap=CHUNK_OVERLAP)
     chunks = splitter.split_documents(docs)
-    emb = GoogleGenerativeAIEmbeddings(model=EMBED_MODEL)
+    emb = GoogleGenerativeAIEmbeddings(model=EMBED_MODEL, google_api_key=key)
     try:  # clear old collection so a rebuild never duplicates chunks (notebook did this too)
         Chroma(collection_name=COLLECTION, embedding_function=emb,
                persist_directory=str(CHROMA_DIR)).delete_collection()
@@ -369,11 +425,11 @@ def get_vector_store():
     key = get_api_key()
     if not key:
         raise RuntimeError("GEMINI_API_KEY is not set.")
-    os.environ["GOOGLE_API_KEY"] = key
     from langchain_chroma import Chroma
     from langchain_google_genai import GoogleGenerativeAIEmbeddings
     return Chroma(collection_name=COLLECTION,
-                  embedding_function=GoogleGenerativeAIEmbeddings(model=EMBED_MODEL),
+                  embedding_function=GoogleGenerativeAIEmbeddings(
+                      model=EMBED_MODEL, google_api_key=key),
                   persist_directory=str(CHROMA_DIR))
 
 
@@ -399,7 +455,8 @@ def ask_rag(question: str, language: str = "en"):
               if s >= SIMILARITY_THRESHOLD and d.metadata.get("file") != "Patient Directory"}
     if not docs:
         return FALLBACK, [], True
-    llm = ChatGoogleGenerativeAI(model=LLM_MODEL, temperature=0)
+    llm = ChatGoogleGenerativeAI(model=LLM_MODEL, temperature=0,
+                                 google_api_key=get_api_key())
     system = SYSTEM_PROMPT
     if language != "en":
         system += f"\nAnswer in {LANG_NAMES[language]}."
@@ -493,7 +550,8 @@ def root():
             "note": "Synthetic demo data only. Decision-support, not a diagnosis tool.",
             "endpoints": ["/health", "/stats", "/patients", "/upload", "/ask", "/auth/login",
                           "/auth/me", "/visit-info", "/tokens", "/tokens/take", "/tokens/next",
-                          "/test-questions", "/admin/stats", "/admin/queries"]}
+                          "/test-questions", "/admin/stats", "/admin/queries",
+                          "/admin/api-key/status", "/admin/api-key", "/admin/api-key/test"]}
 
 
 def registry_or_seed():
@@ -516,7 +574,8 @@ def health():
             "files_indexed": len(reg.get("files", [])),
             "patients_indexed": len(reg.get("patients", [])),
             "note": (None if get_api_key() else
-                     "GEMINI_API_KEY not set — /ask and embedding are disabled until a key is set.")}
+                     "No Gemini API key set — /ask and embedding are disabled until a key is "
+                     "entered on the website (admin Settings) or set as GEMINI_API_KEY.")}
 
 
 @app.get("/stats")
@@ -706,3 +765,46 @@ def admin_stats(user: dict = Depends(require_admin)):
 @app.get("/admin/queries")
 def admin_queries(user: dict = Depends(require_admin)):
     return {"queries": query_rows()}
+
+
+@app.get("/admin/api-key/status")
+def api_key_status_endpoint(user: dict = Depends(require_admin)):
+    """Masked status of the active Gemini key. Never returns the full key."""
+    return api_key_status()
+
+
+@app.post("/admin/api-key")
+def set_api_key(body: dict, user: dict = Depends(require_admin)):
+    """Save a Gemini API key entered by an admin on the website. Takes effect
+    immediately (key resolution is dynamic per request) — no restart needed.
+    The key itself is never returned or logged, only its last 4 chars."""
+    key = (body.get("api_key") or "").strip()
+    if not key:
+        raise HTTPException(400, "api_key is required.")
+    if len(key) < 10:
+        raise HTTPException(400, "That does not look like a Gemini API key.")
+    set_manual_api_key(key, user["username"])
+    return {"saved": True, **api_key_status()}
+
+
+@app.delete("/admin/api-key")
+def delete_api_key(user: dict = Depends(require_admin)):
+    """Remove the manually entered key — the backend falls back to the
+    server's own GEMINI_API_KEY from the environment."""
+    clear_manual_api_key(user["username"])
+    return {"removed": True, **api_key_status()}
+
+
+@app.post("/admin/api-key/test")
+def test_api_key(user: dict = Depends(require_admin)):
+    """One tiny live call with the active key (a single embedding) to prove
+    the key works. Uses ~1 API request — only run when the admin asks for it."""
+    key = get_api_key()
+    if not key:
+        return {"ok": False, "detail": "No Gemini API key is configured."}
+    try:
+        from langchain_google_genai import GoogleGenerativeAIEmbeddings
+        GoogleGenerativeAIEmbeddings(model=EMBED_MODEL, google_api_key=key).embed_query("ok")
+    except Exception as e:
+        return {"ok": False, "detail": f"Key check failed: {e}"}
+    return {"ok": True, "detail": "Key works — Gemini answered the test call."}

@@ -57,7 +57,7 @@ export default function TestsPage() {
 
   return (
     <div className="pb-20 md:pb-0">
-      <section className="bg-white">
+      <section>
         <div className="max-w-3xl mx-auto px-4 py-12 md:py-16">
           <p className="text-xs font-bold tracking-[0.18em] text-brand-deep uppercase">Sunrise Family Clinic • Live tests</p>
           <h1 className="mt-4 text-3xl md:text-4xl font-bold text-ink">Test questions</h1>
@@ -69,7 +69,7 @@ export default function TestsPage() {
           </p>
 
           {loadError && (
-            <p className="mt-6 text-sm text-red-700 bg-red-50 rounded-[16px] px-4 py-3">{loadError}</p>
+            <p className="mt-6 text-sm text-red-300 bg-red-950/60 rounded-[16px] px-4 py-3">{loadError}</p>
           )}
 
           {!ready ? (
@@ -85,7 +85,7 @@ export default function TestsPage() {
                 <button
                   onClick={runAll}
                   disabled={runningAll || questions.length === 0}
-                  className="bg-brand hover:bg-brand-dark disabled:opacity-50 text-white font-semibold rounded-lg px-6 py-3 shadow-soft"
+                  className="bg-brand hover:bg-brand-dark disabled:opacity-50 text-onlime font-semibold rounded-lg px-6 py-3 shadow-soft"
                 >
                   {runningAll ? "Running…" : "Run all live"}
                 </button>
@@ -101,7 +101,7 @@ export default function TestsPage() {
                 {questions.map((q) => {
                   const res = results[String(q.id)] || { status: "pending" as const };
                   return (
-                    <article key={String(q.id)} className="bg-white border border-line rounded-[24px] shadow-card p-5">
+                    <article key={String(q.id)} className="bg-card border border-line rounded-[24px] shadow-card p-5">
                       <div className="flex flex-wrap items-start gap-3">
                         <div className="flex-1 min-w-0">
                           <p className="font-bold text-ink">{q.question}</p>
@@ -116,7 +116,7 @@ export default function TestsPage() {
                               : res.status === "fail"
                                 ? "bg-red-100 text-red-800"
                                 : res.status === "running"
-                                  ? "bg-amber-100 text-amber-800"
+                                  ? "bg-amber-400/15 text-amber-200"
                                   : res.status === "error"
                                     ? "bg-red-100 text-red-800"
                                     : "bg-lavender text-muted"
@@ -127,7 +127,7 @@ export default function TestsPage() {
                         <button
                           onClick={() => runOne(q)}
                           disabled={res.status === "running" || runningAll}
-                          className="shrink-0 bg-grape hover:bg-grape-dark disabled:opacity-50 text-white text-sm font-semibold rounded-full px-4 py-2 shadow-soft"
+                          className="shrink-0 bg-grape hover:bg-grape-dark disabled:opacity-50 text-onlime text-sm font-semibold rounded-full px-4 py-2 shadow-soft"
                         >
                           Run
                         </button>
@@ -136,14 +136,14 @@ export default function TestsPage() {
                         <p className="mt-3 text-sm text-ink bg-lavender rounded-xl px-4 py-3 whitespace-pre-line">{res.answer}</p>
                       )}
                       {res.status === "fail" && (
-                        <p className="mt-2 text-sm text-red-700">The live answer did not contain the expected phrase “{q.expected}”.</p>
+                        <p className="mt-2 text-sm text-red-300">The live answer did not contain the expected phrase “{q.expected}”.</p>
                       )}
-                      {res.status === "error" && <p className="mt-2 text-sm text-red-700">{res.detail}</p>}
+                      {res.status === "error" && <p className="mt-2 text-sm text-red-300">{res.detail}</p>}
                     </article>
                   );
                 })}
                 {questions.length === 0 && !loadError && (
-                  <p className="text-muted bg-white rounded-[24px] shadow-card p-5 text-sm">No test questions returned by the backend yet.</p>
+                  <p className="text-muted bg-card rounded-[24px] shadow-card p-5 text-sm">No test questions returned by the backend yet.</p>
                 )}
               </div>
             </>

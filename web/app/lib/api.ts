@@ -82,6 +82,12 @@ export type TokenStatus = {
   served_count: number;
 };
 
+export type ApiKeyStatus = {
+  configured: boolean;
+  source: "manual" | "env" | "none";
+  masked: string | null;
+};
+
 export type TestQuestion = { id: number | string; question: string; expected: string };
 
 const TOKEN_KEY = "health-rag-token";
@@ -153,6 +159,19 @@ export async function apiPost<T>(
       headers: { "Content-Type": "application/json", ...authHeaders(token) },
       body: JSON.stringify(body),
     });
+    const data = (await r.json().catch(() => null)) as T | null;
+    return { ok: r.ok, status: r.status, data, detail: (data as { detail?: string } | null)?.detail };
+  } catch {
+    return { ok: false, status: 0, data: null, detail: `Could not reach the backend at ${API_URL}.` };
+  }
+}
+
+export async function apiDelete<T>(
+  path: string,
+  token?: string | null,
+): Promise<{ ok: boolean; status: number; data: T | null; detail?: string }> {
+  try {
+    const r = await fetch(`${API_URL}${path}`, { method: "DELETE", headers: authHeaders(token) });
     const data = (await r.json().catch(() => null)) as T | null;
     return { ok: r.ok, status: r.status, data, detail: (data as { detail?: string } | null)?.detail };
   } catch {

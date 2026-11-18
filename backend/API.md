@@ -132,6 +132,31 @@ Bearer, role `admin` only. `200 {"queries": [{"id", "timestamp",
 ...]}` — all logged questions, most recent first. `sources` is the list
 of source objects as returned by `/ask`.
 
+### GET `/admin/api-key/status`
+Bearer, role `admin` only. `200 {"configured": bool, "source":
+"manual" | "env" | "none", "masked": <last 4 chars of the active key> |
+null}`. The full key is never returned.
+
+### POST `/admin/api-key`
+Bearer, role `admin` only. Body `{"api_key": "<Gemini key>"}`. Stores the
+key in SQLite (`settings` table) and it takes effect immediately — key
+resolution is dynamic per request, no restart needed. A manually entered
+key takes precedence over the server's `GEMINI_API_KEY` env var. Returns
+`{"saved": true, "configured": true, "source": "manual", "masked":
+"<last 4>"}`. Empty / too-short keys → `400`. The key itself is never
+returned or logged; changes are recorded (who/when, no value) in
+`settings_log`.
+
+### DELETE `/admin/api-key`
+Bearer, role `admin` only. Removes the manually entered key; the backend
+falls back to the server's `GEMINI_API_KEY`. Returns the new status.
+
+### POST `/admin/api-key/test`
+Bearer, role `admin` only. One tiny live embedding call with the active
+key. `200 {"ok": true, "detail": ...}` when Gemini answers, or
+`{"ok": false, "detail": "<error>"}` when the key is invalid / quota is
+exhausted. Uses ~1 API request.
+
 ## Query log (SQLite `backend/clinic.db`, table `queries`)
 
 Every `/ask` call logs one row: `question`, `answer`, `sources` (JSON),
