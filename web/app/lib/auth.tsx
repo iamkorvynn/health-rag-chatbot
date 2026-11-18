@@ -10,6 +10,7 @@ type AuthCtx = {
   token: string | null;
   ready: boolean;
   login: (username: string, password: string) => Promise<{ ok: boolean; error?: string }>;
+  signup: (username: string, password: string) => Promise<{ ok: boolean; error?: string }>;
   logout: () => void;
 };
 
@@ -18,6 +19,7 @@ const Ctx = createContext<AuthCtx>({
   token: null,
   ready: false,
   login: async () => ({ ok: false }),
+  signup: async () => ({ ok: false }),
   logout: () => {},
 });
 
@@ -68,13 +70,30 @@ export function AuthProvider({ children }: { children: ReactNode }) {
     return { ok: true };
   }, []);
 
+  // Create a staff account (POST /auth/register) and sign in with it —
+  // the backend fixes the role to "staff", so nobody can sign up as admin.
+  const signup = useCallback(async (username: string, password: string) => {
+    const r = await apiPost<{ access_token: string; username: string; role: AuthUser["role"] }>(
+      "/auth/register",
+      { username, password },
+    );
+    if (!r.ok || !r.data?.access_token) {
+      return { ok: false, error: r.detail || `Sign-up failed (${r.status || "no connection"}).` };
+    }
+    const u = { username: r.data.username, role: r.data.role };
+    storeAuth(r.data.access_token, u);
+    setToken(r.data.access_token);
+    setUser(u);
+    return { ok: true };
+  }, []);
+
   const logout = useCallback(() => {
     clearAuth();
     setToken(null);
     setUser(null);
   }, []);
 
-  const value = useMemo(() => ({ user, token, ready, login, logout }), [user, token, ready, login, logout]);
+  const value = useMemo(() => ({ user, token, ready, login, signup, logout }), [user, token, ready, login, signup, logout]);
   return <Ctx.Provider value={value}>{children}</Ctx.Provider>;
 }
 

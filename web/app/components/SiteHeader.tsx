@@ -69,9 +69,14 @@ export default function SiteHeader() {
             </button>
           </span>
         ) : (
-          <Link href="/chat" className="ml-auto md:ml-0 bg-brand hover:bg-brand-dark text-onlime text-sm font-semibold rounded-lg px-4 py-2 shadow-soft">
-            Sign in →
-          </Link>
+          <span className="ml-auto md:ml-0 flex items-center gap-2">
+            <Link href="/login" className="border border-line hover:border-brand text-ink text-sm font-semibold rounded-lg px-4 py-2 bg-card">
+              Sign in
+            </Link>
+            <Link href="/signup" className="bg-brand hover:bg-brand-dark text-onlime text-sm font-semibold rounded-lg px-4 py-2 shadow-soft">
+              Get started →
+            </Link>
+          </span>
         )}
       </div>
     </header>

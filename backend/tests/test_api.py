@@ -60,6 +60,50 @@ def test_login_wrong_password_is_401():
     assert r.status_code == 401
 
 
+def test_register_creates_staff_account_and_can_log_in():
+    import uuid
+    from main import db_conn
+    username = f"regtest_{uuid.uuid4().hex[:8]}"
+    try:
+        r = client.post("/auth/register", json={"username": username, "password": "secret99"})
+        assert r.status_code == 200, r.text
+        # New accounts are always staff — never admin, even if asked.
+        assert r.json()["role"] == "staff" and r.json()["username"] == username
+        assert r.json()["token_type"] == "bearer"
+        # The new account can log in and its token works.
+        r = client.post("/auth/login", json={"username": username, "password": "secret99"})
+        assert r.status_code == 200
+        headers = {"Authorization": f"Bearer {r.json()['access_token']}"}
+        r = client.get("/auth/me", headers=headers)
+        assert r.json() == {"username": username, "role": "staff"}
+        # Duplicate username is rejected.
+        r = client.post("/auth/register", json={"username": username, "password": "other99"})
+        assert r.status_code == 409
+    finally:
+        with db_conn() as conn:
+            conn.execute("DELETE FROM users WHERE username = ?", (username,))
+            conn.commit()
+
+
+def test_register_rejects_admin_role_and_bad_input():
+    # Asking for admin still creates staff (role is fixed server-side).
+    import uuid
+    from main import db_conn
+    username = f"regtest_{uuid.uuid4().hex[:8]}"
+    try:
+        r = client.post("/auth/register", json={"username": username, "password": "secret99", "role": "admin"})
+        assert r.status_code == 200, r.text
+        assert r.json()["role"] == "staff"
+    finally:
+        with db_conn() as conn:
+            conn.execute("DELETE FROM users WHERE username = ?", (username,))
+            conn.commit()
+    # Bad usernames and short passwords are rejected.
+    assert client.post("/auth/register", json={"username": "ab", "password": "secret99"}).status_code == 400
+    assert client.post("/auth/register", json={"username": "bad name!", "password": "secret99"}).status_code == 400
+    assert client.post("/auth/register", json={"username": "goodname", "password": "short"}).status_code == 400
+
+
 def test_auth_me():
     r = client.get("/auth/me", headers=AUTH)
     assert r.json() == {"username": "doctor", "role": "doctor"}

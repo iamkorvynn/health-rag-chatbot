@@ -3,7 +3,6 @@
 // asks about them on /chat (the question travels via sessionStorage).
 import { useEffect, useState } from "react";
 import { useRouter } from "next/navigation";
-import LoginForm from "../components/LoginForm";
 import { apiGet, type Patient } from "../lib/api";
 import { useAuth } from "../lib/auth";
 
@@ -18,6 +17,11 @@ export default function PatientsPage() {
   const router = useRouter();
   const [patients, setPatients] = useState<Patient[]>([]);
   const [patientsError, setPatientsError] = useState("");
+
+  // Login required — send unauthenticated visitors to the sign-in page.
+  useEffect(() => {
+    if (ready && !user) router.replace("/login");
+  }, [ready, user, router]);
 
   useEffect(() => {
     if (!ready || !user || !token) return;
@@ -46,13 +50,8 @@ export default function PatientsPage() {
             Every patient in the clinic records. Tap a card to ask about them.
           </p>
 
-          {!ready ? (
+          {!ready || !user ? (
             <p className="mt-10 text-center text-muted text-sm">Loading…</p>
-          ) : !user ? (
-            <div className="mt-10">
-              <h2 className="font-bold text-lg text-ink mb-3">Sign in to see patients</h2>
-              <LoginForm />
-            </div>
           ) : (
             <div className="mt-10">
               {patientsError && <p className="text-sm text-red-300 bg-card rounded-[16px] shadow-soft px-4 py-3 mb-3">{patientsError}</p>}

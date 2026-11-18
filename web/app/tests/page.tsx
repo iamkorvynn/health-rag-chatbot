@@ -5,7 +5,7 @@
 // whether the answer contains the expected phrase. Results are never
 // hardcoded — re-run any time and they are recomputed from live answers.
 import { useEffect, useState } from "react";
-import LoginForm from "../components/LoginForm";
+import { useRouter } from "next/navigation";
 import { apiGet, apiPost, type TestQuestion } from "../lib/api";
 import { useAuth } from "../lib/auth";
 
@@ -17,10 +17,16 @@ type Result = {
 
 export default function TestsPage() {
   const { user, token, ready } = useAuth();
+  const router = useRouter();
   const [questions, setQuestions] = useState<TestQuestion[]>([]);
   const [loadError, setLoadError] = useState("");
   const [results, setResults] = useState<Record<string, Result>>({});
   const [runningAll, setRunningAll] = useState(false);
+
+  // Login required — send unauthenticated visitors to the sign-in page.
+  useEffect(() => {
+    if (ready && !user) router.replace("/login");
+  }, [ready, user, router]);
 
   useEffect(() => {
     apiGet<{ questions: TestQuestion[] }>("/test-questions").then((r) => {
@@ -72,13 +78,8 @@ export default function TestsPage() {
             <p className="mt-6 text-sm text-red-300 bg-red-950/60 rounded-[16px] px-4 py-3">{loadError}</p>
           )}
 
-          {!ready ? (
+          {!ready || !user ? (
             <p className="mt-6 text-muted text-sm">Loading…</p>
-          ) : !user ? (
-            <div className="mt-8">
-              <p className="text-sm text-muted mb-3">Sign in to run the test questions — they are asked through the same authenticated chat endpoint.</p>
-              <LoginForm />
-            </div>
           ) : (
             <>
               <div className="mt-8 flex flex-wrap items-center gap-3">

@@ -4,12 +4,13 @@
 // it immediately — no restart, no redeploy. The key is stored on the
 // backend (admin only); the page only ever shows its last 4 characters.
 import { useEffect, useState } from "react";
-import LoginForm from "../components/LoginForm";
+import { useRouter } from "next/navigation";
 import { apiDelete, apiGet, apiPost, type ApiKeyStatus } from "../lib/api";
 import { useAuth } from "../lib/auth";
 
 export default function SettingsPage() {
   const { user, token, ready } = useAuth();
+  const router = useRouter();
   const [keyInput, setKeyInput] = useState("");
   const [keyStatus, setKeyStatus] = useState<ApiKeyStatus | null>(null);
   const [keyError, setKeyError] = useState("");
@@ -19,6 +20,11 @@ export default function SettingsPage() {
   const [testBusy, setTestBusy] = useState(false);
   const [removeBusy, setRemoveBusy] = useState(false);
   const isAdmin = user?.role === "admin";
+
+  // Login required — send unauthenticated visitors to the sign-in page.
+  useEffect(() => {
+    if (ready && !user) router.replace("/login");
+  }, [ready, user, router]);
 
   function refreshStatus() {
     if (!token) return;
@@ -100,13 +106,8 @@ export default function SettingsPage() {
             Clinic-wide settings for the assistant.
           </p>
 
-          {!ready ? (
+          {!ready || !user ? (
             <p className="mt-10 text-center text-muted text-sm">Loading…</p>
-          ) : !user ? (
-            <div className="mt-10">
-              <h2 className="font-bold text-lg text-ink mb-3">Sign in to change settings</h2>
-              <LoginForm />
-            </div>
           ) : !isAdmin ? (
             <p className="mt-10 text-sm text-muted bg-card rounded-[24px] shadow-card p-5">
               Settings are available to admin accounts only — you are signed in as {user.role}.

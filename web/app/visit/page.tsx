@@ -145,20 +145,27 @@ export default function VisitPage() {
               </>
             )}
 
-            <form onSubmit={takeToken} className="mt-5 flex gap-2">
-              <input
-                value={name}
-                onChange={(e) => setName(e.target.value)}
-                placeholder="Your name"
-                className="flex-1 bg-card border border-line rounded-full px-4 py-3 text-sm shadow-soft outline-none focus:border-brand"
-              />
-              <button
-                disabled={takeBusy || !name.trim()}
-                className="bg-grape hover:bg-grape-dark disabled:opacity-50 text-onlime font-semibold rounded-full px-5 py-3 text-sm shadow-soft shrink-0"
-              >
-                {takeBusy ? "…" : "Take a token"}
-              </button>
-            </form>
+            {!user ? (
+              <p className="mt-5 text-sm bg-card rounded-[16px] shadow-soft px-4 py-3">
+                <Link href="/login" className="text-brand-deep font-semibold hover:underline">Sign in</Link>{" "}
+                to take a token — the queue is for signed-in clinic users.
+              </p>
+            ) : (
+              <form onSubmit={takeToken} className="mt-5 flex gap-2">
+                <input
+                  value={name}
+                  onChange={(e) => setName(e.target.value)}
+                  placeholder="Your name"
+                  className="flex-1 bg-card border border-line rounded-full px-4 py-3 text-sm shadow-soft outline-none focus:border-brand"
+                />
+                <button
+                  disabled={takeBusy || !name.trim()}
+                  className="bg-grape hover:bg-grape-dark disabled:opacity-50 text-onlime font-semibold rounded-full px-5 py-3 text-sm shadow-soft shrink-0"
+                >
+                  {takeBusy ? "…" : "Take a token"}
+                </button>
+              </form>
+            )}
             {taken && (
               <p className="mt-3 text-sm bg-card rounded-[16px] shadow-soft px-4 py-3">
                 Your token is <strong className="text-ink">#{taken.number}</strong> — position {taken.position} in the queue.
@@ -186,7 +193,7 @@ export default function VisitPage() {
               )}
               {!user && (
                 <span className="text-xs text-muted">
-                  Staff? <Link href="/chat" className="text-brand-deep font-semibold hover:underline">Sign in</Link> to call the next token.
+                  Staff? <Link href="/login" className="text-brand-deep font-semibold hover:underline">Sign in</Link> to call the next token.
                 </span>
               )}
             </div>

@@ -1,15 +1,21 @@
 "use client";
 // /upload — upload clinic PDFs (admin only). Uploaded PDFs are indexed
 // into the clinic records; scanned ones are OCR'd by the backend.
-import { useState } from "react";
-import LoginForm from "../components/LoginForm";
+import { useEffect, useState } from "react";
+import { useRouter } from "next/navigation";
 import { apiGet, apiUpload, type Stats } from "../lib/api";
 import { useAuth } from "../lib/auth";
 
 export default function UploadPage() {
   const { user, token, ready } = useAuth();
+  const router = useRouter();
   const [uploadMsg, setUploadMsg] = useState("");
   const isAdmin = user?.role === "admin";
+
+  // Login required — send unauthenticated visitors to the sign-in page.
+  useEffect(() => {
+    if (ready && !user) router.replace("/login");
+  }, [ready, user, router]);
 
   async function upload(files: FileList | null) {
     if (!files || !files.length || !token) return;
@@ -44,13 +50,8 @@ export default function UploadPage() {
             Add new clinic documents and the assistant indexes them, so new records are searchable right away.
           </p>
 
-          {!ready ? (
+          {!ready || !user ? (
             <p className="mt-10 text-center text-muted text-sm">Loading…</p>
-          ) : !user ? (
-            <div className="mt-10">
-              <h2 className="font-bold text-lg text-ink mb-3">Sign in to upload</h2>
-              <LoginForm />
-            </div>
           ) : !isAdmin ? (
             <p className="mt-10 text-sm text-muted bg-card rounded-[24px] shadow-card p-5">
               Uploads are available to admin accounts only — you are signed in as {user.role}.

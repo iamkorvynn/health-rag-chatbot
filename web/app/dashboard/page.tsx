@@ -2,16 +2,22 @@
 // /dashboard — admin dashboard: live counts from GET /admin/stats and the
 // query log from GET /admin/queries. Every number comes from the backend.
 import { useEffect, useState } from "react";
-import LoginForm from "../components/LoginForm";
+import { useRouter } from "next/navigation";
 import { apiGet, type AdminQuery, type AdminStats } from "../lib/api";
 import { useAuth } from "../lib/auth";
 
 export default function DashboardPage() {
   const { user, token, ready } = useAuth();
+  const router = useRouter();
   const [adminStats, setAdminStats] = useState<AdminStats | null>(null);
   const [adminQueries, setAdminQueries] = useState<AdminQuery[]>([]);
   const [adminError, setAdminError] = useState("");
   const isAdmin = user?.role === "admin";
+
+  // Login required — send unauthenticated visitors to the sign-in page.
+  useEffect(() => {
+    if (ready && !user) router.replace("/login");
+  }, [ready, user, router]);
 
   useEffect(() => {
     if (!ready || !user || !token || !isAdmin) return;
@@ -34,13 +40,8 @@ export default function DashboardPage() {
             What the clinic has asked, and how often the assistant had to say it could not find the answer.
           </p>
 
-          {!ready ? (
+          {!ready || !user ? (
             <p className="mt-10 text-center text-muted text-sm">Loading…</p>
-          ) : !user ? (
-            <div className="mt-10">
-              <h2 className="font-bold text-lg text-ink mb-3">Sign in to see the dashboard</h2>
-              <LoginForm />
-            </div>
           ) : !isAdmin ? (
             <p className="mt-10 text-sm text-muted bg-card rounded-[24px] shadow-card p-5">
               The admin dashboard is available to admin accounts only — you are signed in as {user.role}.

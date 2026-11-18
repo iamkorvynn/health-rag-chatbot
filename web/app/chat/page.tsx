@@ -3,16 +3,22 @@
 // (e.g. a patient card) arrives via sessionStorage and is asked on load.
 import { useEffect, useRef, useState } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import Chat from "../components/Chat";
-import LoginForm from "../components/LoginForm";
 import { useAuth } from "../lib/auth";
 
 const PENDING_KEY = "health-rag-pending-question";
 
 export default function ChatPage() {
   const { user, ready } = useAuth();
+  const router = useRouter();
   const [externalQuestion, setExternalQuestion] = useState<{ q: string; nonce: number } | undefined>(undefined);
   const questionNonce = useRef(0);
+
+  // Login required — send unauthenticated visitors to the sign-in page.
+  useEffect(() => {
+    if (ready && !user) router.replace("/login");
+  }, [ready, user, router]);
 
   useEffect(() => {
     if (!user) return;
@@ -38,17 +44,8 @@ export default function ChatPage() {
             Ask about a patient, a medicine, or the clinic — answers come only from the clinic records, with sources.
           </p>
 
-          {!ready ? (
+          {!ready || !user ? (
             <p className="mt-10 text-center text-muted text-sm">Loading…</p>
-          ) : !user ? (
-            <div className="mt-10">
-              <h2 className="font-bold text-lg text-ink mb-3">Sign in to use the assistant</h2>
-              <LoginForm />
-              <p className="text-xs text-muted mt-3">
-                The landing, visit info and token queue stay public — sign in for chat, patients and uploads.
-                See <Link href="/visit" className="text-brand-deep font-semibold hover:underline">Visit &amp; tokens</Link> without signing in.
-              </p>
-            </div>
           ) : (
             <div className="mt-10">
               <Chat externalQuestion={externalQuestion} />

@@ -63,10 +63,10 @@ export default function Home() {
               exactly where each answer came from.
             </p>
             <div className="mt-7 flex flex-wrap gap-3">
-              <Link href="/chat" className="bg-brand hover:bg-brand-dark text-onlime font-semibold rounded-full px-6 py-3 shadow-soft">Get started →</Link>
+              <Link href="/signup" className="bg-brand hover:bg-brand-dark text-onlime font-semibold rounded-full px-6 py-3 shadow-soft">Get started →</Link>
               <Link href="/patients" className="border border-line hover:border-brand text-ink font-semibold rounded-full px-6 py-3 bg-card">See patients</Link>
             </div>
-            <p className="mt-4 text-sm text-muted">No sign-up. Synthetic demo data — not real patient records.</p>
+            <p className="mt-4 text-sm text-muted">Sign in or create a staff account to start. Synthetic demo data — not real patient records.</p>
           </div>
 
           {/* App preview — soft purple card, big circular stat (live count) */}
@@ -181,26 +181,25 @@ export default function Home() {
                 tool: every answer still cites its source file.
               </p>
               <div className="mt-7 flex flex-wrap gap-3">
-                <Link href="/chat" className="bg-brand hover:bg-brand-dark text-onlime font-semibold rounded-full px-6 py-3 shadow-soft">Get started →</Link>
+                <Link href="/signup" className="bg-brand hover:bg-brand-dark text-onlime font-semibold rounded-full px-6 py-3 shadow-soft">Get started →</Link>
                 <Link href="/how" className="border border-line hover:border-brand text-ink font-semibold rounded-full px-6 py-3">See how it works</Link>
               </div>
-              <p className="mt-4 text-xs text-muted">Preview — the real sign-in lives on the Chat page.</p>
             </div>
             <div className="relative flex justify-center py-4">
               <div className="absolute w-72 h-72 rounded-full bg-emerald-500/20 blur-3xl" />
               <div className="relative w-60 rounded-[2.5rem] border border-lime-400/20 bg-[#0b120c] p-3 shadow-card-lg">
-                <div className="rounded-[2rem] bg-gradient-to-b from-[#0d2818] to-[#070b08] px-5 py-8 text-center">
+                <div className="rounded-[2rem] bg-gradient-to-b from-[#0d2818] to-[#070b08] px-5 py-8">
                   <span className="mx-auto w-11 h-11 rounded-2xl bg-brand flex items-center justify-center shadow-soft">
                     <svg viewBox="0 0 24 24" className="w-6 h-6" fill="none" stroke="#0b120c" strokeWidth="3" strokeLinecap="round"><path d="M12 5v14M5 12h14" /></svg>
                   </span>
-                  <p className="mt-4 font-bold text-ink">Welcome back</p>
-                  <p className="text-xs text-muted mt-1">Sign in to the clinic assistant</p>
-                  <div className="mt-5 space-y-2 text-left">
-                    <div className="rounded-full border border-line bg-card px-4 py-2.5 text-xs text-muted">Username</div>
-                    <div className="rounded-full border border-line bg-card px-4 py-2.5 text-xs text-muted">Password</div>
+                  <p className="mt-4 font-bold text-ink text-center">Ask the assistant</p>
+                  <p className="text-xs text-muted mt-1 text-center">Answers only from clinic records</p>
+                  <div className="mt-5 space-y-2">
+                    <div className="rounded-2xl bg-card px-4 py-2.5 text-xs text-ink shadow-soft">What is Rahul Mehta allergic to?</div>
+                    <div className="rounded-2xl bg-lavender px-4 py-2.5 text-xs text-ink shadow-soft">Penicillin (rash, reported 2014).</div>
+                    <p className="text-[11px] text-muted">Source: Patient_P1001_Rahul_Mehta.pdf (p.1)</p>
                   </div>
-                  <div className="mt-4 rounded-full bg-brand py-2.5 text-sm font-bold text-onlime">Continue →</div>
-                  <p className="text-[11px] text-muted mt-3">Demo accounts: admin / doctor / staff</p>
+                  <div className="mt-4 rounded-full bg-brand py-2.5 text-sm font-bold text-onlime text-center">Ask a question →</div>
                 </div>
               </div>
               <span className="absolute left-2 top-10 bg-card border border-line rounded-full px-3 py-1.5 text-xs font-semibold text-ink shadow-soft">P1001 — Rahul Mehta</span>

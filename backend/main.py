@@ -598,6 +598,30 @@ def login(body: dict):
             "token_type": "bearer", "username": username, "role": row["role"]}
 
 
+@app.post("/auth/register")
+def register(body: dict):
+    """Create a staff account. Role is always "staff" — the request body
+    cannot pick a role, so nobody can sign up as admin. Returns a JWT
+    like /auth/login, so the new account is signed in immediately."""
+    username = (body.get("username") or "").strip()
+    password = body.get("password") or ""
+    if not re.fullmatch(r"[A-Za-z0-9_.\-]{3,30}", username):
+        raise HTTPException(400, "Username must be 3-30 characters: letters, numbers, _ . -")
+    if len(password) < 6:
+        raise HTTPException(400, "Password must be at least 6 characters.")
+    with db_conn() as conn:
+        if conn.execute("SELECT 1 FROM users WHERE username = ?",
+                        (username,)).fetchone():
+            raise HTTPException(409, "That username is already taken.")
+        conn.execute(
+            "INSERT INTO users (username, password_hash, role) VALUES (?, ?, ?)",
+            (username, bcrypt.hashpw(password.encode(), bcrypt.gensalt()).decode(),
+             "staff"))
+        conn.commit()
+    return {"access_token": create_token(username, "staff"),
+            "token_type": "bearer", "username": username, "role": "staff"}
+
+
 @app.get("/auth/me")
 def me(user: dict = Depends(get_current_user)):
     return {"username": user["username"], "role": user["role"]}

@@ -53,6 +53,14 @@ No auth. Request `{"username": "...", "password": "..."}`.
 Success `200 {"access_token", "token_type": "bearer", "username", "role"}`.
 Bad credentials → `401`.
 
+### POST `/auth/register`
+No auth. Request `{"username": "...", "password": "..."}`.
+Creates a **staff** account only — the role is fixed server-side, the body
+cannot pick a role. Username must be 3-30 characters (letters, numbers,
+`_ . -`); password at least 6 characters. Success `200` returns the same
+JWT shape as `/auth/login` (signed in immediately). Username taken → `409`;
+bad username/password → `400`.
+
 ### GET `/auth/me`
 Bearer (any role). `200 {"username", "role"}`.
 

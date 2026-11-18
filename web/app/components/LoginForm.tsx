@@ -1,8 +1,15 @@
 "use client";
 // Sign-in form — real login against POST /auth/login (JWT).
 // Seeded demo accounts: admin / doctor / staff (passwords <role>123).
+// Used ONLY by the dedicated /login page.
 import { useState } from "react";
 import { useAuth } from "../lib/auth";
+
+const DEMO_ACCOUNTS: { label: string; username: string; password: string }[] = [
+  { label: "Admin", username: "admin", password: "admin123" },
+  { label: "Doctor", username: "doctor", password: "doctor123" },
+  { label: "Staff", username: "staff", password: "staff123" },
+];
 
 export default function LoginForm({ compact = false }: { compact?: boolean }) {
   const { login } = useAuth();
@@ -21,13 +28,17 @@ export default function LoginForm({ compact = false }: { compact?: boolean }) {
     setBusy(false);
   }
 
+  function quickFill(username: string, password: string) {
+    setUsername(username);
+    setPassword(password);
+    setError("");
+  }
+
   return (
     <form onSubmit={submit} className="bg-card rounded-[24px] shadow-card p-5 space-y-3">
       {!compact && (
         <p className="text-sm text-muted">
-          Sign in to use the assistant. Staff accounts are provided by the clinic — try the demo
-          accounts <code className="text-ink">admin / admin123</code>, <code className="text-ink">doctor / doctor123</code> or{" "}
-          <code className="text-ink">staff / staff123</code>.
+          Sign in to use the assistant. Staff accounts are provided by the clinic.
         </p>
       )}
       <div className="flex flex-col sm:flex-row gap-2">
@@ -54,6 +65,23 @@ export default function LoginForm({ compact = false }: { compact?: boolean }) {
         </button>
       </div>
       {error && <p className="text-sm text-red-300 bg-red-950/60 rounded-xl px-4 py-2">{error}</p>}
+      {!compact && (
+        <div>
+          <p className="text-xs text-muted">Demo accounts — tap to fill in:</p>
+          <div className="mt-2 flex flex-wrap gap-2">
+            {DEMO_ACCOUNTS.map((a) => (
+              <button
+                key={a.username}
+                type="button"
+                onClick={() => quickFill(a.username, a.password)}
+                className="bg-lavender border border-line hover:border-grape rounded-full px-4 py-2 text-xs font-semibold text-ink shadow-soft"
+              >
+                {a.label} · {a.username} / {a.password}
+              </button>
+            ))}
+          </div>
+        </div>
+      )}
     </form>
   );
 }
