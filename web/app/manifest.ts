@@ -1,5 +1,8 @@
 import type { MetadataRoute } from "next";
 
+// Static export needs this route to be force-static (no server at runtime).
+export const dynamic = "force-static";
+
 // Web app manifest (Next.js built-in convention — served at /manifest.webmanifest).
 export default function manifest(): MetadataRoute.Manifest {
   return {
