@@ -70,7 +70,10 @@ nohup ssh -i ~/.ssh/localhost_run -o StrictHostKeyChecking=accept-new \
   -R 80:127.0.0.1:8000 ssh.localhost.run > ssh-tunnel.log 2>&1 &
 echo $! > ssh-tunnel.pid
 sleep 35
-NEW_URL=$(grep -o 'https://[a-z0-9]*\.app\.lhr\.life' ssh-tunnel.log | head -1)
+# localhost.run can rotate the subdomain MID-SESSION ("tunnel <old> removed"
+# followed by a new "<new> tunneled" line), so take the LAST URL in the log —
+# head -1 grabs the removed one and publishes a dead URL (seen 2026-11-19).
+NEW_URL=$(grep -o 'https://[a-z0-9]*\.app\.lhr\.life' ssh-tunnel.log | tail -1)
 if [ -n "$NEW_URL" ]; then
   echo "$NEW_URL" > "$URL_FILE"
   echo "$(date -Iseconds) tunnel restarted, new URL: $NEW_URL" >> tunnel-keepalive.log
